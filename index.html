@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Meeting Scheduler</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash/4.17.21/lodash.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #4A90E2;
+            --secondary-color: #50E3C2;
+            --success-color: #5cb85c;
+            --danger-color: #d9534f;
+            --background-color: #F5F7FA;
+            --card-color: #FFFFFF;
+            --text-primary: #2C3E50;
+            --text-secondary: #666666;
+            --border-radius: 12px;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .card {
+            background: var(--card-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 30px;
+            margin-bottom: 20px;
+            transition: transform 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        #loginContainer {
+            max-width: 400px;
+            margin: 100px auto;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        h1 {
+            color: var(--text-primary);
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 600;
+        }
+
+        h3 {
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        input {
+            padding: 12px 16px;
+            border: 2px solid #E1E8ED;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #357ABD;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: #6c757d;
+            padding: 8px 16px;
+        }
+
+        .delete-btn {
+            background-color: var(--danger-color);
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        .delete-btn:hover {
+            background-color: #c9302c;
+        }
+
+        .time-slots-container {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 20px;
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+
+        @media (max-width: 1200px) {
+            .time-slots-container {
+                grid-template-columns: repeat(5, 200px);
+                padding-bottom: 15px;
+            }
+        }
+
+        .day-column {
+            background: #F8F9FA;
+            padding: 15px;
+            border-radius: var(--border-radius);
+            border: 1px solid #E1E8ED;
+        }
+
+        .day-header {
+            text-align: center;
+            padding: 10px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+            margin-bottom: 0;
+        }
+
+        .quick-select {
+            display: flex;
+            gap: 5px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 0 0 var(--border-radius) var(--border-radius);
+            margin-bottom: 15px;
+        }
+
+        .quick-select-btn {
+        	    flex: 1;
+            padding: 5px;
+            font-size: 12px;
+            background: white;
+            color: var(--text-primary);  /* Add this line */
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+       }
+
+        .quick-select-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .time-slot {
+            display: block;
+            margin: 5px 0;
+            padding: 8px 12px;
+            background-color: white;
+            border: 1px solid #E1E8ED;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .time-slot:hover {
+            background-color: #E3F2FD;
+            border-color: var(--primary-color);
+        }
+
+        .time-slot.selected {
+            background-color: var(--success-color);
+            color: white;
+            border-color: var(--success-color);
+        }
+
+        .member-schedule {
+            background: #F8F9FA;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            margin-bottom: 15px;
+            border: 1px solid #E1E8ED;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .member-info {
+            flex-grow: 1;
+        }
+
+        .member-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 5px;
+        }
+
+        .member-slots {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .common-times {
+            background: #E3F2FD;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            margin-top: 30px;
+        }
+
+        .common-times h3 {
+            color: var(--primary-color);
+        }
+
+        .common-slot {
+            background: white;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 6px;
+            border: 1px solid #BBDEFB;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .time-slots-container {
+                grid-template-columns: 1fr;
+            }
+
+            .member-schedule {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+
+            .logout-btn {
+                position: static;
+                margin-bottom: 20px;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="loginContainer" class="container">
+        <div class="card">
+            <h1>Meeting Scheduler</h1>
+            <div class="login-form">
+                <input type="password" id="password" placeholder="Enter team password">
+                <button onclick="login()">Login</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="mainContent" class="container" style="display: none;">
+        <button class="logout-btn" onclick="logout()">Logout</button>
+        
+        <div class="card">
+            <h1>Team Meeting Scheduler</h1>
+            
+            <div class="member-form">
+                <h3>Add Your Availability</h3>
+                <input type="text" id="memberName" placeholder="Your Name" style="margin-bottom: 20px;">
+                
+                <div class="time-slots-container" id="timeSlots">
+                    <!-- Time slots will be generated here -->
+                </div>
+                
+                <button onclick="addMemberSchedule()" style="margin-top: 20px;">Add My Schedule</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Team Members' Schedules</h3>
+            <div id="teamSchedules">
+                <!-- Individual schedules will be displayed here -->
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Common Available Times</h3>
+            <div id="commonTimeSlots" class="common-times">
+                <!-- Common time slots will be displayed here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const TEAM_PASSWORD = "team2024";
+        const weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+        const timeSlots = [
+            '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', 
+            '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', 
+            '4:00 PM', '5:00 PM', '6:00 PM'
+        ];
+        let teamSchedules = [];
+
+        function login() {
+            const password = document.getElementById('password').value;
+            if (password === TEAM_PASSWORD) {
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+                localStorage.setItem('authenticated', 'true');
+                initializeTimeSlots();
+                loadSavedSchedules();
+            } else {
+                alert('Incorrect password. Please try again.');
+            }
+        }
+
+        function logout() {
+            document.getElementById('loginContainer').style.display = 'block';
+            document.getElementById('mainContent').style.display = 'none';
+            document.getElementById('password').value = '';
+            localStorage.removeItem('authenticated');
+        }
+
+        window.onload = function() {
+            if (localStorage.getItem('authenticated') === 'true') {
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+                initializeTimeSlots();
+                loadSavedSchedules();
+            }
+        };
+
+        function initializeTimeSlots() {
+            const container = document.getElementById('timeSlots');
+            container.innerHTML = '';
+            
+            weekDays.forEach(day => {
+                const dayColumn = document.createElement('div');
+                dayColumn.className = 'day-column';
+                
+                const dayHeader = document.createElement('div');
+                dayHeader.className = 'day-header';
+                dayHeader.textContent = day;
+                dayColumn.appendChild(dayHeader);
+
+                // Add quick selection buttons
+                const quickSelectDiv = document.createElement('div');
+                quickSelectDiv.className = 'quick-select';
+                
+                const fullDayBtn = document.createElement('button');
+                fullDayBtn.className = 'quick-select-btn';
+                fullDayBtn.innerHTML = 'Full Day';
+                fullDayBtn.onclick = () => quickSelect(dayColumn, 'full');
+
+                quickSelectDiv.appendChild(fullDayBtn);
+                dayColumn.appendChild(quickSelectDiv);
+                
+                timeSlots.forEach(time => {
+                    const slot = document.createElement('div');
+                    slot.className = 'time-slot';
+                    slot.textContent = time;
+                    slot.onclick = () => toggleTimeSlot(slot);
+                    slot.setAttribute('data-day', day);
+                    dayColumn.appendChild(slot);
+                });
+                
+                container.appendChild(dayColumn);
+            });
+        }
+
+        function toggleTimeSlot(slot) {
+            slot.classList.toggle('selected');
+        }
+
+        function quickSelect(dayColumn, period) {
+            const slots = dayColumn.getElementsByClassName('time-slot');
+            const button = event.target;
+            const wasActive = button.classList.contains('active');
+            
+            // Remove active class from all buttons in this day column
+            const buttons = dayColumn.getElementsByClassName('quick-select-btn');
+            Array.from(buttons).forEach(btn => btn.classList.remove('active'));
+            
+            // First clear all selections
+            Array.from(slots).forEach(slot => {
+                slot.classList.remove('selected');
+            });
+
+            // If the same button wasn't active before, make the selections
+            if (!wasActive) {
+                button.classList.add('active');
+                Array.from(slots).forEach(slot => {
+                    const time = slot.textContent;
+                    const hour = parseInt(time.split(':')[0]);
+                    const isPM = time.includes('PM');
+                    const hour24 = isPM ? (hour === 12 ? 12 : hour + 12) : (hour === 12 ? 0 : hour);
+
+                    if (period === 'morning' && hour24 < 12) {
+                        slot.classList.add('selected');
+                    } else if (period === 'afternoon' && hour24 >= 12) {
+                        slot.classList.add('selected');
+                    } else if (period === 'full') {
+                        slot.classList.add('selected');
+                    }
+                });
+            }
+        }
+
+        function saveSchedules() {
+            localStorage.setItem('teamSchedules', JSON.stringify(teamSchedules));
+        }
+
+        function loadSavedSchedules() {
+            const saved = localStorage.getItem('teamSchedules');
+            if (saved) {
+                teamSchedules = JSON.parse(saved);
+                displayTeamSchedules();
+                findCommonTimes();
+            }
+        }
+
+        function addMemberSchedule() {
+            const name = document.getElementById('memberName').value.trim();
+            if (!name) {
+                alert('Please enter your name');
+                return;
+            }
+
+            const selectedSlots = Array.from(document.getElementsByClassName('time-slot selected'))
+                .map(slot => `${slot.getAttribute('data-day')} ${slot.textContent}`);
+
+            if (selectedSlots.length === 0) {
+                alert('Please select at least one time slot');
+                return;
+            }
+
+            teamSchedules.push({ name, availability: selectedSlots });
+            
+            displayTeamSchedules();
+            findCommonTimes();
+            saveSchedules();
+            
+            document.getElementById('memberName').value = '';
+            Array.from(document.getElementsByClassName('time-slot selected'))
+                .forEach(slot => slot.classList.remove('selected'));
+        }
+
+        function displayTeamSchedules() {
+            const container = document.getElementById('teamSchedules');
+            container.innerHTML = '';
+
+            teamSchedules.forEach((member, index) => {
+                const memberDiv = document.createElement('div');
+                memberDiv.className = 'member-schedule';
+                
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'member-info';
+                
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'member-name';
+                nameDiv.textContent = member.name;
+                
+                const slotsDiv = document.createElement('div');
+                slotsDiv.className = 'member-slots';
+                slotsDiv.textContent = member.availability.join(', ');
+                
+                infoDiv.appendChild(nameDiv);
+                infoDiv.appendChild(slotsDiv);
+                
+                const deleteButton = document.createElement('button');
+                deleteButton.className = 'delete-btn';
+                deleteButton.textContent = 'Delete';
+                deleteButton.onclick = () => deleteMember(index);
+                
+                memberDiv.appendChild(infoDiv);
+                memberDiv.appendChild(deleteButton);
+                
+                container.appendChild(memberDiv);
+            });
+        }
+
+        function deleteMember(index) {
+            teamSchedules.splice(index, 1);
+            displayTeamSchedules();
+            findCommonTimes();
+            saveSchedules();
+        }
+
+        function findCommonTimes() {
+            const container = document.getElementById('commonTimeSlots');
+            
+            if (teamSchedules.length === 0) {
+                container.innerHTML = 'No schedules added yet';
+                return;
+            }
+
+            let commonSlots = teamSchedules[0].availability;
+            
+            for (let i = 1; i < teamSchedules.length; i++) {
+                commonSlots = commonSlots.filter(slot => 
+                    teamSchedules[i].availability.includes(slot)
+                );
+            }
+
+            if (commonSlots.length === 0) {
+                container.innerHTML = 'No common time slots found';
+            } else {
+                container.innerHTML = commonSlots
+                    .sort((a, b) => {
+                        const [dayA, timeA] = a.split(' ');
+                        const [dayB, timeB] = b.split(' ');
+                        const dayIndex = weekDays.indexOf(dayA) - weekDays.indexOf(dayB);
+                        if (dayIndex !== 0) return dayIndex;
+                        return timeSlots.indexOf(timeA) - timeSlots.indexOf(timeB);
+                    })
+                    .map(slot => `<div class="common-slot">${slot}</div>`)
+                    .join('');
+            }
+        }
+    </script>
+</body>
+</html>
