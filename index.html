@@ -432,44 +432,40 @@
             }
         }
 
-        function saveSchedules() {
-            localStorage.setItem('teamSchedules', JSON.stringify(teamSchedules));
-        }
+       function saveSchedules() {
+             database.ref('teamSchedules').set(teamSchedules);
+}
 
         function loadSavedSchedules() {
-            const saved = localStorage.getItem('teamSchedules');
-            if (saved) {
-                teamSchedules = JSON.parse(saved);
-                displayTeamSchedules();
-                findCommonTimes();
-            }
-        }
+    database.ref('teamSchedules').on('value', (snapshot) => {
+        teamSchedules = snapshot.val() || [];
+        displayTeamSchedules();
+        findCommonTimes();
+    });
+}
 
         function addMemberSchedule() {
-            const name = document.getElementById('memberName').value.trim();
-            if (!name) {
-                alert('Please enter your name');
-                return;
-            }
+    const name = document.getElementById('memberName').value.trim();
+    if (!name) {
+        alert('Please enter your name');
+        return;
+    }
 
-            const selectedSlots = Array.from(document.getElementsByClassName('time-slot selected'))
-                .map(slot => `${slot.getAttribute('data-day')} ${slot.textContent}`);
+    const selectedSlots = Array.from(document.getElementsByClassName('time-slot selected'))
+        .map(slot => `${slot.getAttribute('data-day')} ${slot.textContent}`);
 
-            if (selectedSlots.length === 0) {
-                alert('Please select at least one time slot');
-                return;
-            }
+    if (selectedSlots.length === 0) {
+        alert('Please select at least one time slot');
+        return;
+    }
 
-            teamSchedules.push({ name, availability: selectedSlots });
-            
-            displayTeamSchedules();
-            findCommonTimes();
-            saveSchedules();
-            
-            document.getElementById('memberName').value = '';
-            Array.from(document.getElementsByClassName('time-slot selected'))
-                .forEach(slot => slot.classList.remove('selected'));
-        }
+    teamSchedules.push({ name, availability: selectedSlots });
+    saveSchedules();
+    
+    document.getElementById('memberName').value = '';
+    Array.from(document.getElementsByClassName('time-slot selected'))
+        .forEach(slot => slot.classList.remove('selected'));
+}
 
         function displayTeamSchedules() {
             const container = document.getElementById('teamSchedules');
@@ -506,11 +502,9 @@
         }
 
         function deleteMember(index) {
-            teamSchedules.splice(index, 1);
-            displayTeamSchedules();
-            findCommonTimes();
-            saveSchedules();
-        }
+    teamSchedules.splice(index, 1);
+    saveSchedules();
+}
 
         function findCommonTimes() {
             const container = document.getElementById('commonTimeSlots');
@@ -544,5 +538,32 @@
             }
         }
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-database-compat.js"></script>
+
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyAjmiQJ22nOsw3ElY2BNiGiAyuqHv0ChHk",
+    authDomain: "schedule-8e3aa.firebaseapp.com",
+    databaseURL: "https://schedule-8e3aa-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "schedule-8e3aa",
+    storageBucket: "schedule-8e3aa.firebasestorage.app",
+    messagingSenderId: "100605470522",
+    appId: "1:100605470522:web:f9d64289e14caf8602d203",
+    measurementId: "G-JER6MJX2NX"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
 </body>
 </html>
